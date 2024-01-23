@@ -1,0 +1,118 @@
+#include <sstream>
+#include <iostream>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
+
+#include "turtlelib/geometry2d.hpp"
+
+using turtlelib::normalize_angle;
+using turtlelib::normalizeVector;
+using turtlelib::Point2D;
+using turtlelib::Vector2D;
+using turtlelib::PI;
+using Catch::Matchers::WithinAbs;
+
+TEST_CASE( "Normalized angle function", "[normalize_angle]" ) 
+{
+    // Typecast case
+    REQUIRE_THAT( normalize_angle(1), WithinAbs(1.0,1.0e-6));
+    // Overflow case
+    REQUIRE_THAT(normalize_angle(PI+1), WithinAbs(1.0-PI,1.0e-6));
+    // Large Overflow case
+    REQUIRE_THAT(normalize_angle(400*PI+1), WithinAbs(1.0,1.0e-6));
+    // Upper limit case (included)
+    REQUIRE_THAT(normalize_angle(PI), WithinAbs(PI,1.0e-6));
+    // Lower limit case (not included)
+    REQUIRE_THAT(normalize_angle(-PI), WithinAbs(PI,1.0e-6));
+    // Zero case
+    REQUIRE_THAT(normalize_angle(0), WithinAbs(0,1.0e-6));
+    // Simple case with pi
+    REQUIRE_THAT(normalize_angle(-PI/4.0), WithinAbs(-PI/4.0,1.0e-6));
+    // Overflow case with pi
+    REQUIRE_THAT(normalize_angle(3.0*PI/2.0), WithinAbs(-PI/2.0,1.0e-6));
+    // Underflow case with pi
+    REQUIRE_THAT(normalize_angle(-5.0*PI/2.0), WithinAbs(-PI/2.0,1.0e-6));
+}
+
+TEST_CASE( "2D Point", "[operator<<]") 
+{
+    Point2D point{4.4, 5.5};
+    std::string str = "[4.4 5.5]";
+
+    std::stringstream sstr;
+    sstr << point;
+    REQUIRE(sstr.str() == str);
+}
+
+TEST_CASE( "2D Point", "[operator>>]")
+{
+    Point2D point_1{}, point_2{};
+    std::stringstream sstr_1, sstr_2;
+
+    sstr_1 << "1.0 2.0";
+    sstr_1 >> point_1;
+
+    sstr_2 << "[3.5 4.5]";
+    sstr_2 >> point_2;
+
+    REQUIRE( point_1.x == 1.0 );
+    REQUIRE( point_1.y == 2.0 );
+    REQUIRE( point_2.x == 3.5 );
+    REQUIRE( point_2.y == 4.5 );
+}
+
+TEST_CASE( "2D Vector", "[operator<<]") 
+{
+    Vector2D vec{9.9, 8.84};
+    std::string str = "[9.9 8.84]";
+
+    std::stringstream sstr;
+    sstr << vec;
+    REQUIRE(sstr.str() == str);
+}
+
+TEST_CASE( "2D Vector", "[operator>>]")
+{
+    Vector2D vec_1{}, vec_2{};
+    std::stringstream sstr_1, sstr_2;
+
+    sstr_1 << "0.1 0.2";
+    sstr_1 >> vec_1;
+
+    sstr_2 << "[0.5 2.3]";
+    sstr_2 >> vec_2;
+
+    REQUIRE( vec_1.x == 0.1 );
+    REQUIRE( vec_1.y == 0.2 );
+    REQUIRE( vec_2.x == 0.5 );
+    REQUIRE( vec_2.y == 2.3 );
+}
+
+TEST_CASE( "Relative vector construction through head and tail points works", "[operator-]") 
+{
+    // Check x.
+    REQUIRE_THAT(  (Point2D{1.0, 0.0} - Point2D{4.0, 0.0}).x, WithinAbs(-3.0,1.0e-6));
+    // Check y.
+    REQUIRE_THAT(  (Point2D{0.0, -3.0} - Point2D{0.0, -5.3}).y, WithinAbs(2.3,1.0e-6));
+    std::cout << "Testing" << std::endl;
+}
+
+TEST_CASE( "Point displacement through relative vector works", "[operator+]") 
+{
+    // Check x.
+    REQUIRE_THAT(  (Point2D{-2.6, 0.0} + Vector2D{1.0, -1.0}).x, WithinAbs(-1.6,1.0e-6));
+    // Check y.
+    REQUIRE_THAT(  (Point2D{0.0, 3.0} + Vector2D{1.0, -1.0}).y, WithinAbs(2.0,1.0e-6));
+}
+
+TEST_CASE( "Vector normalization works", "[operator+]") // Aditya, Nair
+{
+    Vector2D v{45, 10.0};
+
+    Vector2D v_hat = normalizeVector(v);
+
+    // Check x.
+    REQUIRE_THAT(v_hat.x, WithinAbs(0.9761870602,1.0e-6));
+    // Check y.
+    REQUIRE_THAT(v_hat.y, WithinAbs(0.2169304578,1.0e-6));
+}
