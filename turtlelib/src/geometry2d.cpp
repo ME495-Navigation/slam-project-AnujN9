@@ -52,7 +52,7 @@ namespace turtlelib
     double normalize_angle(double rad)
     {
         // Normalize to range (-PI, PI].
-        if (almost_equal(rad, -PI))
+        if (almost_equal(rad, -PI)) // you should actually use == here. Either it's exactly -Pi, or it will be converted by atan2
         {
             return PI;
         }

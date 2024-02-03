@@ -278,11 +278,11 @@ private:
     for (int i = 0; i < obs_n; i++) {
       visualization_msgs::msg::Marker obstacle_;
       obstacle_.header.frame_id = "nusim/world";
-      obstacle_.header.stamp = this->get_clock()->now();
+      obstacle_.header.stamp = this->get_clock()->now();  // no need for this->
       obstacle_.id = i;
       obstacle_.type = visualization_msgs::msg::Marker::CYLINDER;
       obstacle_.action = visualization_msgs::msg::Marker::ADD;
-      obstacle_.pose.position.x = obstacles_x_[i];
+      obstacle_.pose.position.x = obstacles_x_[i]; // use.at
       obstacle_.pose.position.y = obstacles_y_[i];
       obstacle_.pose.position.z = 0.0;
       obstacle_.pose.orientation.x = 0.0;

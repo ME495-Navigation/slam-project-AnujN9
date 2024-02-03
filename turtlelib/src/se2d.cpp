@@ -59,7 +59,7 @@ namespace turtlelib
     // Transform a point.
     Point2D Transform2D::operator()(Point2D p) const
     {
-        Point2D newp{};
+        Point2D newp{}; // can construct this directly with the args that you are using
 
         // Rotate.
         newp.x = p.x * cos(rotAng) - p.y * sin(rotAng);
@@ -100,7 +100,7 @@ namespace turtlelib
     Transform2D Transform2D::inv() const
     {
         Vector2D newTranslationVector{};
-        double newRotationAngle{};
+        double newRotationAngle{}; // const auto newRotationAngle = -rotAng
 
         // R^T
         newRotationAngle = -rotAng;
@@ -118,6 +118,8 @@ namespace turtlelib
     // COMPOSE TRANSFORMS.
     Transform2D & Transform2D::operator*=(const Transform2D & rhs)
     {
+        // this could be written in a simpler way if you used Transform2D constructors to create
+        // temporaries...
         double newRotationAngle{};
 
         // R_a * R_rhs

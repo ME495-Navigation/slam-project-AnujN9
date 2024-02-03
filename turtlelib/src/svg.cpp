@@ -30,6 +30,7 @@ void SVG::saveToFile(const std::string& filename, const std::string& additionalC
         file.close();
     } else {
         std::cerr << "Unable to open file: " << filename << std::endl;
+        // should throw an exception not jjust print an error
     }
 }
 
