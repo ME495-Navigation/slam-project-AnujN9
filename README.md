@@ -6,3 +6,4 @@ This repository consists of several ROS packages
 - nuturtle_description - Defines the urdf of the Turtlebot
 - turtlelib - C++ library that performs the 2D transformations
 - nusim - Simulation of the Turtlebot
+- nuturtle_control - Controls the turtlebot in rviz and on the real robot

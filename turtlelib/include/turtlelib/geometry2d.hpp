@@ -62,7 +62,7 @@ namespace turtlelib
         double x = 0.0;
 
         /// \brief the y coordinate
-        double y = 0.0;
+        double y = 0.0;  
     };
 
     /// \brief output a 2 dimensional point as [xcomponent ycomponent]
@@ -86,6 +86,25 @@ namespace turtlelib
 
         /// \brief the y coordinate
         double y = 0.0;
+
+        /// \brief add this vector with another and store the result
+        /// in this object
+        /// \param rhs - the first vector to apply
+        /// \return a reference to the newly transformed operator
+        Vector2D & operator+=(const Vector2D & rhs);
+
+        /// \brief subtract this vector with another and store the result
+        /// in this object
+        /// \param rhs - the first vector to apply
+        /// \return a reference to the newly transformed operator
+        Vector2D & operator-=(const Vector2D & rhs);
+
+        /// \brief multiply this vector with a scalar and store the result
+        /// in this object
+        /// \param rhs - the scalar to apply
+        /// \return a reference to the newly transformed operator
+        Vector2D & operator*=(const double & rhs);
+
     };
 
     /// \brief Subtracting one point from another yields a vector
@@ -129,6 +148,47 @@ namespace turtlelib
 
     /// Normalize Vector
     Vector2D normalizeVector(const Vector2D & v);
+
+    /// \brief Vector addition
+    /// \param lhs - the first vector
+    /// \param rhs - the second vector
+    /// \return the transformed vector
+    Vector2D operator+(Vector2D lhs, const Vector2D & rhs);
+
+    /// \brief Vector subtraction
+    /// \param lhs - the first vector
+    /// \param rhs - the second vector
+    /// \return the transformed vector
+    Vector2D operator-(Vector2D lhs, const Vector2D & rhs);
+
+    /// \brief Vector multiplication with a scalar
+    /// \param lhs - the vector
+    /// \param rhs - the scalar
+    /// \return the transformed scaled vector
+    Vector2D operator*(Vector2D lhs, const double & rhs);
+
+    /// \brief Vector multiplication with a scalar
+    /// \param lhs - the scalar
+    /// \param rhs - the vector
+    /// \return the transformed scaled vector
+    Vector2D operator*(const double & lhs, Vector2D rhs);
+
+    /// \brief Vector dot product 
+    /// \param vec1 - the first vector
+    /// \param vec2 - the second vector
+    /// \return the dot product value
+    double dot(Vector2D vec1, Vector2D vec2);
+
+    /// \brief compute the magnitude of the vector
+    /// \param vec - the vector to calculate the magnitude
+    /// \return the magnitude of the vector
+    double magnitude(Vector2D vec);
+
+    /// \brief compute the angle between two vectors
+    /// \param vec1 - the first vector
+    /// \param vec2 - the second vector
+    /// \return the angle between two vectors
+    double angle(Vector2D vec1, Vector2D vec2);
 }
 
 #endif

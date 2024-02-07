@@ -13,6 +13,7 @@ using turtlelib::Vector2D;
 using turtlelib::Twist2D;
 using turtlelib::Transform2D;
 using turtlelib::PI;
+using turtlelib::integrate_twist;
 using Catch::Matchers::WithinAbs;
 
 TEST_CASE( "2D Twist", "[operator<<]") 
@@ -185,10 +186,10 @@ TEST_CASE( "SE(2) transform", "[operator>>]")
     sstr_b << "deg: 45.9 x: 0.0 y: 1.0";
     sstr_b >> tf_2;
 
-    REQUIRE_THAT( tf_1.rotation(), WithinAbs(turtlelib::normalize_angle(turtlelib::deg2rad(370.1)), 1.0e-6 ));
+    REQUIRE_THAT( tf_1.rotation(), WithinAbs(normalize_angle(turtlelib::deg2rad(370.1)), 1.0e-6 ));
     REQUIRE_THAT( tf_1.translation().x, WithinAbs(0.2, 1.0e-6));
     REQUIRE_THAT( tf_1.translation().y, WithinAbs(0.3, 1.0e-6));
-    REQUIRE_THAT( tf_2.rotation(), WithinAbs(turtlelib::normalize_angle(turtlelib::deg2rad(45.9)), 1.0e-6));
+    REQUIRE_THAT( tf_2.rotation(), WithinAbs(normalize_angle(turtlelib::deg2rad(45.9)), 1.0e-6));
     REQUIRE_THAT( tf_2.translation().x, WithinAbs(0.0, 1.0e-6) );
     REQUIRE_THAT( tf_2.translation().y, WithinAbs(1.0, 1.0e-6) );
 }
@@ -208,4 +209,23 @@ TEST_CASE( "SE(2) multiplication operator", "[oprator *]")
     REQUIRE_THAT( tf_3.rotation(), WithinAbs(0*PI,1.0e-6));
     REQUIRE_THAT( tf_3.translation().x, WithinAbs(25.5,1.0e-6));
     REQUIRE_THAT( tf_3.translation().y, WithinAbs(3.0,1.0e-6));  
+}
+
+TEST_CASE("Testing the integrate twist function", "[integrate_twist]")
+{
+    // Pure translation
+    Twist2D twist1 = {0.0, 1.0, 1.0};
+    Transform2D Ts1 = integrate_twist(twist1);
+    REQUIRE_THAT(Ts1.translation().x, WithinAbs(1.0, 1e-5));
+    REQUIRE_THAT(Ts1.translation().y, WithinAbs(1.0, 1e-5));
+    // Pure rotation
+    Twist2D twist2 = {-2.0, 0.0, 0.0};
+    Transform2D Ts2 = integrate_twist(twist2);
+    REQUIRE_THAT(Ts2.rotation(), WithinAbs(-2.0, 1e-5));
+    // Rotation with Translation
+    Twist2D twist3 = {-5, 2.0, 1.0};
+    Transform2D Ts3 = integrate_twist(twist3);
+    REQUIRE_THAT(Ts3.translation().x, WithinAbs(-0.2403021, 1e-5));
+    REQUIRE_THAT(Ts3.translation().y, WithinAbs(-0.4783199, 1e-5));
+    REQUIRE_THAT(Ts3.rotation(), WithinAbs(1.283187, 1e-5));
 }

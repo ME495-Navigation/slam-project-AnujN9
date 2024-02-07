@@ -1,0 +1,9 @@
+<launch>
+  <arg name="config_file1" default="diff_params.yaml" 
+   description=".yaml file to configure robot controls"/>
+
+  <node pkg="nuturtle_control" exec="turtle_control" name="turtle_control">
+      <param from="$(find-pkg-share nuturtle_description)/config/$(var config_file1)"/>
+  </node>
+
+</launch>

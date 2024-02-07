@@ -1,8 +1,7 @@
-Nadir
-Adithya
-Shail
-Kyle
-Allen
-Leo
-
-I used this https://stackoverflow.com/questions/4421706/what-are-the-basic-rules-and-idioms-for-operator-overloading/4421715#4421715 for general reference as well.
+1) Adithya - verified forward kinematics in diff_drive.cpp
+2) Damien - verified forward kinematics in diff_drive.cpp
+3) Nadir
+4) Shail
+5) Kyle
+6) Allen
+7) Leo

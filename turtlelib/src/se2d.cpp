@@ -188,5 +188,30 @@ namespace turtlelib
         return lhs;
     }
 
+    Transform2D integrate_twist(Twist2D twist) {
+        if (almost_equal(twist.omega, 0.0)) {
+            // Pure translation
+            return {
+                {twist.x, twist.y},
+                0.0
+            };
+        } else {
+            // Pure roataion
+            Transform2D Ts_s_prime {twist.omega};
 
+            // Changing from s to b which is just a shift
+            Transform2D Ts_b {
+                {
+                    twist.y / twist.omega,
+                    -twist.x / twist.omega
+                },
+                0.0
+            };
+
+            Transform2D Tb_b_prime;
+            Transform2D Ts_prime_b_prime = Ts_b;
+            Tb_b_prime = Ts_b.inv()*Ts_s_prime*Ts_prime_b_prime;
+            return Tb_b_prime;
+        }
+    }
 }

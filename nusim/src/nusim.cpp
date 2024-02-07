@@ -1,5 +1,5 @@
 /// \file
-/// \brief The nusim package is a simulation of the turtlebot3 robots inrviz.
+/// \brief The nusim node is a simulation of the turtlebot3 robots inrviz.
 ///
 /// PARAMETERS:
 ///     \param rate (int): Timer callback frequency [Hz]

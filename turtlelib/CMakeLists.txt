@@ -18,7 +18,7 @@ project(turtlelib)
 # you don't need or want to.
 # name is the name of the library without the extension or lib prefix
 # name creates a cmake "target"
-add_library(turtlelib src/geometry2d.cpp src/se2d.cpp src/svg.cpp)
+add_library(turtlelib src/geometry2d.cpp src/se2d.cpp src/svg.cpp src/diff_drive.cpp)
 
 # Use target_include_directories so that #include"mylibrary/header.hpp" works
 # The use of the <BUILD_INTERFACE> and <INSTALL_INTERFACE> is because when
@@ -97,7 +97,7 @@ include(CTest)
 # CTest sets BUILD_TESTING to on. To disable tests add -DBUILD_TESTING=OFF when invoking cmake
 if(BUILD_TESTING)
     find_package(Catch2 3 REQUIRED)
-    add_executable(test_turtlelib tests/test_geometry2d.cpp tests/test_se2d.cpp tests/test_svg.cpp)
+    add_executable(test_turtlelib tests/test_geometry2d.cpp tests/test_se2d.cpp tests/test_svg.cpp tests/test_diff_drive.cpp)
     target_link_libraries(test_turtlelib Catch2::Catch2WithMain turtlelib) # AnyOtherLibrariesAsNeeded)
     add_test(NAME tests_for_turtlelib COMMAND test_turtlelib)
 endif()
