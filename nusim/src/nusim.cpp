@@ -13,18 +13,22 @@
 ///     \param obstacles_r_ (double): Radius of cylindrical obstacles [m]
 ///
 /// PUBLISHES:
-///     ~/timestep (std_msgs::msg::UInt64): Simulation timestep
-///     ~/obstacles (visualization_msgs::msg::MarkerArray): Marker obstacles of cylinders
+///     \param ~/timestep (std_msgs::msg::UInt64): Simulation timestep
+///     \param ~/obstacles (visualization_msgs::msg::MarkerArray): Marker obstacles of cylinders
+///     \param ~/walls (visualization_msgs::msg::MarkerArray): Marker of the walls
 ///
 /// SUBSCRIBES:
 ///     None
 ///
 /// SERVERS:
-///     ~/reset (std_srvs::srv::Empty): Resets simulation to initial state
-///     ~/teleport (nusim::srv::Teleport): Teleports robot to a specific pose
+///     \param ~/reset (std_srvs::srv::Empty): Resets simulation to initial state
+///     \param ~/teleport (nusim::srv::Teleport): Teleports robot to a specific pose
 ///
 /// CLIENTS:
 ///     None
+///
+/// BROADCASTERS:
+///     \param tf_broadcaster_ (tf2_ros::TransformBroadcaster): Broadcasts the robot
 
 #include <chrono>
 #include <functional>
@@ -278,12 +282,12 @@ private:
     for (int i = 0; i < obs_n; i++) {
       visualization_msgs::msg::Marker obstacle_;
       obstacle_.header.frame_id = "nusim/world";
-      obstacle_.header.stamp = this->get_clock()->now();
+      obstacle_.header.stamp = get_clock()->now();
       obstacle_.id = i;
       obstacle_.type = visualization_msgs::msg::Marker::CYLINDER;
       obstacle_.action = visualization_msgs::msg::Marker::ADD;
-      obstacle_.pose.position.x = obstacles_x_[i];
-      obstacle_.pose.position.y = obstacles_y_[i];
+      obstacle_.pose.position.x = obstacles_x_.at(i);
+      obstacle_.pose.position.y = obstacles_y_.at(i);
       obstacle_.pose.position.z = 0.0;
       obstacle_.pose.orientation.x = 0.0;
       obstacle_.pose.orientation.y = 0.0;

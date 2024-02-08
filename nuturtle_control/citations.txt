@@ -1,0 +1,3 @@
+Worked with Zach, Damien, Leo, Carter, Ananya
+Parameter check was done using this resource which Zach had provided on the 6th Feb
+1) https://roboticsbackend.com/rclcpp-params-tutorial-get-set-ros2-params-with-cpp/

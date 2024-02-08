@@ -25,8 +25,8 @@ namespace turtlelib
         return config;
     }
 
-    // ##### Verified with Aditya and Damien, Begin Citation 1 & 2
-    void DiffDrive::ForwardKinematics(Wheel delta_position)
+    // ##### Verified with Aditya and Damien, Begin_Citation 1 & 2
+    Twist2D DiffDrive::ForwardKinematics(Wheel delta_position)
     {
         wheel_position.left = wheel_position.left + delta_position.left;
         wheel_position.right = wheel_position.right + delta_position.right;
@@ -49,6 +49,8 @@ namespace turtlelib
         config.x = Tw_b_prime.translation().x; // Updating change in config
         config.y = Tw_b_prime.translation().y;
         config.theta = normalize_angle(Tw_b_prime.rotation());
+
+        return body; // returning twist for odom
     }
 
     WheelVelocities DiffDrive::InverseKinematics(Twist2D twist)
@@ -65,5 +67,5 @@ namespace turtlelib
         }
         return wheel_vel;
     }
-    // ##### Verfied with Aditya and Damien, End Citation 1 & 2
+    // ##### Verfied with Aditya and Damien, End_Citation 1 & 2
 }

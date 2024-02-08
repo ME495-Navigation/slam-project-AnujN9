@@ -5,13 +5,21 @@
     <arg name="use_rviz" value="false" />
   </include>
 
-  <arg name="config_file" default="basic_world.yaml" 
+  <arg name="config_file_1" default="basic_world.yaml" 
    description=".yaml file to configure the simulator"/>
 
+  <arg name="config_file_2" default="diff_params.yaml" 
+   description=".yaml from turtle_description"/>
+
+  <arg name="use_rviz" default="false"
+    description="rviz for nusim launchfile"/>
+
   <node pkg="nusim" exec="nusim" name="nusim">
-    <param from="$(find-pkg-share nusim)/config/$(var config_file)"/>
+    <param from="$(find-pkg-share nusim)/config/$(var config_file_1)"/>
+    <param from="$(find-pkg-share nusim)/config/$(var config_file_2)"/>
   </node>
 
-  <node name="rviz2" pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share nusim)/config/nusim.rviz"/>
-
+  <group if="$(eval '\'$(var use_rviz)\' == \'true\'')">
+    <node name="rviz2" pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share nusim)/config/nusim.rviz"/>
+  </group>
 </launch>

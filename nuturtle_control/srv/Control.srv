@@ -1,0 +1,4 @@
+# Service to move robot at a velocity and radius
+float64 velocity # positive for ccw and negative for cw
+float64 radius
+---

@@ -1,9 +1,75 @@
 <launch>
-  <arg name="config_file1" default="diff_params.yaml" 
+  <arg name="cmd_src" default="circle" 
+   description="determines which node publishes the commands. 'circle', 'teleop', 'none'"/>
+
+  <arg name="robot" default="nusim" 
+   description="determines me simulation or real. 'nusim', 'localhost', 'none'"/>
+
+  <arg name="use_rviz" default="true" 
+   description="uses rviz. 'true', 'false'"/>
+
+  <arg name="config_file_1" default="diff_params.yaml" 
    description=".yaml file to configure robot controls"/>
 
-  <node pkg="nuturtle_control" exec="turtle_control" name="turtle_control">
-      <param from="$(find-pkg-share nuturtle_description)/config/$(var config_file1)"/>
-  </node>
+  <group if="$(eval '\'$(var cmd_src)\' == \'circle\'')">
+    <node pkg="nuturtle_control" exec="circle"/>
+  </group>
+
+  <group if="$(eval '\'$(var cmd_src)\' == \'teleop\'')">
+    <node pkg="teleop_twist_keyboard"
+      exec="teleop_twist_keyboard"
+      output="screen" 
+      launch-prefix="xterm -e"/>
+  </group>
+
+  <group if="$(eval '\'$(var cmd_src)\' == \'none\'')">
+  </group>
+
+  <group if="$(eval '\'$(var robot)\' == \'nusim\'')">
+    <include file="$(find-pkg-share nusim)/launch/nusim.launch.xml">
+      <arg name="color" value="red" />
+      <arg name="use_rviz" value="false"/>
+      <arg name="use_jsp" value="true"/>
+      <arg name="config_file_1" value="basic_world.yaml"/>
+      <arg name="config_file_2" value="diff_params.yaml"/>
+    </include>
+    <node pkg="nuturtle_control" exec="odometry">
+      <param from="$(find-pkg-share nuturtle_description)/config/diff_params.yaml"/>
+      <param name="odom_id" value="odom"/>
+      <param name="body_id" value="blue/base_footprint"/>
+    </node>
+    <node pkg="nuturtle_control" exec="turtle_control">
+      <param from="$(find-pkg-share nuturtle_description)/config/diff_params.yaml"/>
+    </node>
+    <node pkg="rviz2" exec="rviz2"
+      args="-d $(find-pkg-share nuturtle_control)/config/nucontrol.rviz"
+      if="$(var use_rviz)\' == \'true\'')"
+    />
+  </group>
+
+  <group if="$(eval '\'$(var robot)\' == \'localhost\'')">
+    <node pkg="nuturtle_control" exec="odometry"\>
+    <node pkg="nuturtle_control" exec="turtle_control"\>
+  </group>
+
+  <group if="$(eval '\'$(var robot)\' == \'none\'')">
+    <node pkg="rviz2" exec="rviz2"
+      args="-d $(find-pkg-share nuturtle_control)/config/nuc2.rviz"
+      if="$(var use_rviz)\' == \'true\'')"
+    />
+  </group>
+
+  <node pkg="tf2_ros" exec="static_transform_publisher"
+    args="
+    --frame-id nusim/world
+    --child-frame-id blue/odom
+    --x 0
+    --y 0
+    --z 0
+    --qx 0
+    --qy 0
+    --qz 0
+    --qw 1
+    "/>
 
 </launch>

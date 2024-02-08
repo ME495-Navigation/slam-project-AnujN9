@@ -1,4 +1,5 @@
 #include "turtlelib/svg.hpp"
+#include <stdexcept>
 
 SVG::SVG(int width, int height) : width(width), height(height) {
     elements.push_back("<svg width=\"" + std::to_string(width) + "\" height=\"" + std::to_string(height) + "\">");
@@ -30,6 +31,7 @@ void SVG::saveToFile(const std::string& filename, const std::string& additionalC
         file.close();
     } else {
         std::cerr << "Unable to open file: " << filename << std::endl;
+        throw std::invalid_argument("Unable to open file");
     }
 }
 

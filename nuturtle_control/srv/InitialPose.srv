@@ -1,0 +1,5 @@
+#request x, y and theta of the pose of the robot to reset to
+float64 x
+float64 y
+float64 theta
+---

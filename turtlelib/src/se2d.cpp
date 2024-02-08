@@ -59,26 +59,15 @@ namespace turtlelib
     // Transform a point.
     Point2D Transform2D::operator()(Point2D p) const
     {
-        Point2D newp{};
+        Point2D newp{(p.x * cos(rotAng) - p.y * sin(rotAng)) + tVector.x, (p.x * sin(rotAng) + p.y * cos(rotAng)) + tVector.y};
 
-        // Rotate.
-        newp.x = p.x * cos(rotAng) - p.y * sin(rotAng);
-        newp.y = p.x * sin(rotAng) + p.y * cos(rotAng);
-
-        // Translate in global frame.
-        newp = newp + tVector;
-        
         return newp;
     }
 
     // Transform a vector.
     Vector2D Transform2D::operator()(Vector2D v) const
     {
-        Vector2D newv{};
-
-        // Rotate.
-        newv.x = v.x * cos(rotAng) - v.y * sin(rotAng);
-        newv.y = v.x * sin(rotAng) + v.y * cos(rotAng);
+        Vector2D newv{v.x * cos(rotAng) - v.y * sin(rotAng), v.x * sin(rotAng) + v.y * cos(rotAng)};
 
         return newv;
     }
@@ -86,12 +75,7 @@ namespace turtlelib
     // Transform a twist.
     Twist2D Transform2D::operator()(Twist2D v) const
     {
-        Twist2D newv{};
-
-        // Multiply with Adjoint.
-        newv.omega = v.omega;
-        newv.x = v.x * cos(rotAng) - v.y * sin(rotAng) + tVector.y * newv.omega;
-        newv.y = v.x * sin(rotAng) + v.y * cos(rotAng) - tVector.x * newv.omega;
+        Twist2D newv{v.omega, v.x * cos(rotAng) - v.y * sin(rotAng) + tVector.y * newv.omega, v.x * sin(rotAng) + v.y * cos(rotAng) - tVector.x * newv.omega};
 
         return newv;
     }
@@ -100,10 +84,8 @@ namespace turtlelib
     Transform2D Transform2D::inv() const
     {
         Vector2D newTranslationVector{};
-        double newRotationAngle{};
-
         // R^T
-        newRotationAngle = -rotAng;
+        const auto newRotationAngle = -rotAng;
 
         // -R^T p
         newTranslationVector.x = -(tVector.x * cos(newRotationAngle) - tVector.y * sin(newRotationAngle));
@@ -118,10 +100,8 @@ namespace turtlelib
     // COMPOSE TRANSFORMS.
     Transform2D & Transform2D::operator*=(const Transform2D & rhs)
     {
-        double newRotationAngle{};
-
         // R_a * R_rhs
-        newRotationAngle = normalize_angle(rotAng + rhs.rotation());
+        const auto newRotationAngle = normalize_angle(rotAng + rhs.rotation());
 
         // Convert translation vector to point (p_rhs)
         Point2D temp{rhs.translation().x, rhs.translation().y};

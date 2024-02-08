@@ -1,7 +1,8 @@
 1) Adithya - verified forward kinematics in diff_drive.cpp
 2) Damien - verified forward kinematics in diff_drive.cpp
-3) Nadir
-4) Shail
-5) Kyle
-6) Allen
-7) Leo
+3) Abhishek Sankar
+4) Nadir
+5) Shail
+6) Kyle
+7) Allen
+8) Leo

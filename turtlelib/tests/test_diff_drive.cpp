@@ -28,7 +28,6 @@ TEST_CASE("Testing for driving forward", "DiffDrive")
     WheelVelocities w = turtle.InverseKinematics(tw);
     REQUIRE_THAT(w.left, WithinAbs(1.0, 1e-5));
     REQUIRE_THAT(w.right, WithinAbs(1.0, 1e-5));
-    
 }
 
 TEST_CASE("Testing for just rotation", "DiffDrive")
@@ -46,7 +45,6 @@ TEST_CASE("Testing for just rotation", "DiffDrive")
     WheelVelocities w = turtle.InverseKinematics(tw);
     REQUIRE_THAT(w.left, WithinAbs(-0.5*PI, 1e-5));
     REQUIRE_THAT(w.right, WithinAbs(0.5*PI, 1e-5));
-    
 }
 
 TEST_CASE("Testing for both rotation and translation", "DiffDrive")
@@ -65,7 +63,6 @@ TEST_CASE("Testing for both rotation and translation", "DiffDrive")
     WheelVelocities w = turtle2.InverseKinematics(tw);
     REQUIRE_THAT(w.left, WithinAbs(52.9900784155, 1e-5));
     REQUIRE_THAT(w.right, WithinAbs(68.2220427966, 1e-5));
-    
 }
 
 TEST_CASE("Impossible twist","DiffDrive Inverse")

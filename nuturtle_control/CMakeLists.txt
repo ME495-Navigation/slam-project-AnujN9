@@ -12,6 +12,14 @@ find_package(ament_cmake REQUIRED)
 # find_package(<dependency> REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(turtlelib REQUIRED)
+find_package(nuturtlebot_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -25,17 +33,37 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+rosidl_generate_interfaces(${PROJECT_NAME}_srv
+  "srv/InitialPose.srv"
+  "srv/Control.srv"
+  LIBRARY_NAME ${PROJECT_NAME}
+  DEPENDENCIES
+)
+
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_srv "rosidl_typesupport_cpp")
+
 add_executable(turtle_control src/turtle_control.cpp)
 target_link_libraries(turtle_control turtlelib::turtlelib)
-ament_target_dependencies(turtle_control rclcpp)
+ament_target_dependencies(turtle_control rclcpp nuturtlebot_msgs geometry_msgs sensor_msgs)
+
+add_executable(odometry src/odometry.cpp)
+target_link_libraries(odometry turtlelib::turtlelib "${cpp_typesupport_target}")
+ament_target_dependencies(odometry rclcpp sensor_msgs nav_msgs tf2 tf2_ros geometry_msgs)
+
+add_executable(circle src/circle.cpp)
+target_link_libraries(circle turtlelib::turtlelib "${cpp_typesupport_target}")
+ament_target_dependencies(circle rclcpp std_srvs geometry_msgs)
 
 install(TARGETS
   turtle_control
+  odometry
+  circle
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY
   launch
+  config
   src
   DESTINATION share/${PROJECT_NAME}/
 )

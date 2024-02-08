@@ -52,7 +52,7 @@ namespace turtlelib
     double normalize_angle(double rad)
     {
         // Normalize to range (-PI, PI].
-        if (almost_equal(rad, -PI))
+        if (rad == -PI)
         {
             return PI;
         }
@@ -83,7 +83,6 @@ namespace turtlelib
             v_hat.x = v.x / v_norm;
             v_hat.y = v.y / v_norm;
         }
-
         return v_hat;
     }
 
@@ -142,5 +141,4 @@ namespace turtlelib
     {
         return atan2(vec1.x*vec2.y-vec1.y*vec2.x, vec1.x*vec2.x+vec1.y*vec2.y);
     }
-
 }
