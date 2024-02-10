@@ -6,21 +6,21 @@
 namespace turtlelib
 {
     DiffDrive::DiffDrive() : wheel_radius(0.033),
-                             wheel_track(0.16), config{0.0, 0.0, 0.0},
+                             track_width(0.16), config{0.0, 0.0, 0.0},
                              wheel_position{0.0, 0.0}{}
 
     DiffDrive::DiffDrive(double radius, double track) : wheel_radius(radius),
-                                                                 wheel_track(track),
+                                                                 track_width(track),
                                                                  config{0.0, 0.0, 0.0},
                                                                  wheel_position{0.0, 0.0}{}
 
     DiffDrive::DiffDrive(double radius, double track, Robot_configuration robot_config) :
                                     wheel_radius(radius),
-                                    wheel_track(track),
+                                    track_width(track),
                                     config{robot_config},
                                     wheel_position{0.0, 0.0}{}
 
-    Robot_configuration DiffDrive::configuration()
+    Robot_configuration DiffDrive::configuration() const
     {
         return config;
     }
@@ -37,12 +37,12 @@ namespace turtlelib
         wheel_vel.right = delta_position.right;
 
         // Equation 3
-        double body_omega = (wheel_radius/wheel_track) * (wheel_vel.right - wheel_vel.left);
+        double body_omega = (wheel_radius/track_width) * (wheel_vel.right - wheel_vel.left);
         double body_x = (wheel_radius/2)*(wheel_vel.left + wheel_vel.right);
         double body_y = 0.0;
         Twist2D body{body_omega,body_x,body_y};
 
-        Transform2D Tb_b_prime = integrate_twist(Twist2D(body)); // Transformation matrix between start and end position
+        Transform2D Tb_b_prime = integrate_twist(body); // Transformation matrix between start and end position
         Transform2D Tw_b(Vector2D{config.x, config.y}, config.theta); // Current position to world
         Transform2D Tw_b_prime = Tw_b*Tb_b_prime;
         
@@ -62,8 +62,8 @@ namespace turtlelib
         }
         else
         {
-            wheel_vel.left = (1/wheel_radius)*(-(wheel_track/2)*twist.omega + twist.x); // Equation 1
-            wheel_vel.right = (1/wheel_radius)*((wheel_track/2)*twist.omega + twist.x); // Equation 2
+            wheel_vel.left = (1/wheel_radius)*(-(track_width/2)*twist.omega + twist.x); // Equation 1
+            wheel_vel.right = (1/wheel_radius)*((track_width/2)*twist.omega + twist.x); // Equation 2
         }
         return wheel_vel;
     }

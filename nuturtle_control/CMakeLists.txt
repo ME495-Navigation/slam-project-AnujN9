@@ -5,6 +5,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+if(NOT CMAKE_BUILD_TYPE)        # If no build type is set, set one
+  set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Type of build." FORCE)
+endif()
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 # uncomment the following section in order to fill in
@@ -30,6 +34,10 @@ if(BUILD_TESTING)
   # comment the line when this package is in a git repo and when
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
+  # find_package(Catch2 3 REQUIRED)
+  #   add_executable(test_turtlelib tests/test_geometry2d.cpp tests/test_se2d.cpp tests/test_svg.cpp tests/test_diff_drive.cpp)
+  #   target_link_libraries(test_turtlelib Catch2::Catch2WithMain turtlelib) # AnyOtherLibrariesAsNeeded)
+  #   add_test(NAME tests_for_turtlelib COMMAND test_turtlelib)
   ament_lint_auto_find_test_dependencies()
 endif()
 
@@ -64,6 +72,7 @@ install(TARGETS
 install(DIRECTORY
   launch
   config
+  tests
   src
   DESTINATION share/${PROJECT_NAME}/
 )

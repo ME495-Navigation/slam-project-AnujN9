@@ -11,14 +11,22 @@
 ///     \param obstacles_x_ (std::vector<double>): Vector of x coordinates for each obstacle [m]
 ///     \param obstacles_y_ (std::vector<double>): Vector of y coordinates for each obstacle [m]
 ///     \param obstacles_r_ (double): Radius of cylindrical obstacles [m]
+///     \param wheel_radius (double): The radius of the wheels [m]
+///     \param track_width (double): The distance between the wheels [m]
+///     \param motor_cmd_max (double): Maximum motor command value
+///     \param motor_cmd_per_rad_sec (double): Motor command per rad/s conversion factor
+///     \param encoder_ticks_per_rad (double): Encoder ticks per 1 radian turn
+///     \param collision_radius (double): Robot collision radius [m]
 ///
 /// PUBLISHES:
 ///     \param ~/timestep (std_msgs::msg::UInt64): Simulation timestep
 ///     \param ~/obstacles (visualization_msgs::msg::MarkerArray): Marker obstacles of cylinders
 ///     \param ~/walls (visualization_msgs::msg::MarkerArray): Marker of the walls
+///     \param red/sensor_data (nuturtlebot_msgs::msg::SensorData): current simulated sensor
+///            readings
 ///
 /// SUBSCRIBES:
-///     None
+///     \param red/wheel_cmd (nuturtlebot_msgs::msg::WheelCommands): reads twist to update robot
 ///
 /// SERVERS:
 ///     \param ~/reset (std_srvs::srv::Empty): Resets simulation to initial state
@@ -48,6 +56,10 @@
 #include "nusim/srv/teleport.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 #include "visualization_msgs/msg/marker.hpp"
+#include "turtlelib/diff_drive.hpp"
+#include "nuturtlebot_msgs/msg/sensor_data.hpp"
+#include "nuturtlebot_msgs/msg/wheel_commands.hpp"
+
 
 using namespace std::chrono_literals;
 
@@ -66,6 +78,12 @@ class Nusim : public rclcpp::Node
   /// \param obstacles_x_ (std::vector<double>): Vector of x coordinates for each obstacle [m]
   /// \param obstacles_y_ (std::vector<double>): Vector of y coordinates for each obstacle [m]
   /// \param obstacles_r_ (double): Radius of cylindrical obstacles [m]
+  /// \param wheel_radius (double): The radius of the wheels [m]
+  /// \param track_width (double): The distance between the wheels [m]
+  /// \param motor_cmd_max (double): Maximum motor command value
+  /// \param motor_cmd_per_rad_sec (double): Motor command per rad/s conversion factor
+  /// \param encoder_ticks_per_rad (double): Encoder ticks per 1 radian turn
+  /// \param collision_radius (double): Robot collision radius [m]
 
 public:
   Nusim()
@@ -84,7 +102,7 @@ public:
     declare_parameter("obstacles_r", 0.0);
 
     // Get params - Read params from yaml file that is passed in the launch file
-    int rate = get_parameter("rate").as_int();
+    rate_ = get_parameter("rate").as_int();
     x0_ = get_parameter("x0").as_double();
     y0_ = get_parameter("y0").as_double();
     theta0_ = get_parameter("theta0").as_double();
@@ -93,6 +111,30 @@ public:
     obstacles_x_ = get_parameter("obstacles_x").as_double_array();
     obstacles_y_ = get_parameter("obstacles_y").as_double_array();
     obstacles_r_ = get_parameter("obstacles_r").as_double();
+
+    // Declare parameters and their values
+    auto param_desc = rcl_interfaces::msg::ParameterDescriptor{}; // For parameter descriptions
+    param_desc.description = "The wheel radius width in meters";
+    declare_parameter("wheel_radius", rclcpp::PARAMETER_DOUBLE, param_desc);
+    param_desc.description = "The track width between wheels in meters";
+    declare_parameter("track_width", rclcpp::PARAMETER_DOUBLE, param_desc);
+    param_desc.description = "Motor command value per rad/s conversion factor";
+    declare_parameter("motor_cmd_per_rad_sec", rclcpp::PARAMETER_DOUBLE, param_desc);
+    param_desc.description = "Maximum motor command value";
+    declare_parameter("motor_cmd_max", rclcpp::PARAMETER_DOUBLE, param_desc);
+    param_desc.description = "Motor encoder ticks per radian";
+    declare_parameter("encoder_ticks_per_rad", rclcpp::PARAMETER_DOUBLE, param_desc);
+    param_desc.description = "The collision radius of the turtlebot";
+    declare_parameter("collision_radius", rclcpp::PARAMETER_DOUBLE, param_desc);
+    wheel_radius_ = get_parameter("wheel_radius").get_parameter_value().get<double>();
+    track_width_ = get_parameter("track_width").get_parameter_value().get<double>();
+    motor_cmd_per_rad_sec_ = get_parameter(
+      "motor_cmd_per_rad_sec").get_parameter_value().get<double>();
+    motor_cmd_max_ = get_parameter(
+      "motor_cmd_max").get_parameter_value().get<double>();
+    encoder_ticks_per_rad_ = get_parameter(
+      "encoder_ticks_per_rad").get_parameter_value().get<double>();
+    collision_radius_ = get_parameter("collision_radius").get_parameter_value().get<double>();
 
     xi_ = x0_;
     yi_ = y0_;
@@ -115,6 +157,13 @@ public:
       create_publisher<visualization_msgs::msg::MarkerArray>("~/walls", qos_profile);
     obstacles_publisher_ =
       create_publisher<visualization_msgs::msg::MarkerArray>("~/obstacles", qos_profile);
+    sensor_data_pub_ = create_publisher<nuturtlebot_msgs::msg::SensorData>(
+      "red/sensor_data", 10);
+
+    // Subscriber
+    wheel_cmd_sub_ = create_subscription<nuturtlebot_msgs::msg::WheelCommands>(
+      "red/wheel_cmd", 10,
+      std::bind(&Nusim::wheel_cmd_callback, this, std::placeholders::_1));
 
     // Services
     reset_server_ = create_service<std_srvs::srv::Empty>(
@@ -129,7 +178,7 @@ public:
 
     // Timer
     timer_ = create_wall_timer(
-      std::chrono::milliseconds(1000 / rate),
+      std::chrono::milliseconds(1000 / rate_),
       std::bind(&Nusim::timer_callback, this));
 
     publish_obstacles();
@@ -137,6 +186,37 @@ public:
   }
 
 private:
+  // Variables
+  size_t timestep_;
+  int rate_;
+  double x0_, y0_, theta0_;
+  double xi_, yi_, thetai_;
+  double arena_x_length_, arena_y_length_;
+  double obstacles_r_;
+  double wheel_radius_, track_width_, motor_cmd_per_rad_sec_, motor_cmd_max_,
+    encoder_ticks_per_rad_, collision_radius_;
+  int obs_n;
+  std::vector<double> obstacles_x_, obstacles_y_;
+  visualization_msgs::msg::MarkerArray obstacles_, walls_;
+  turtlelib::DiffDrive turtlebot_{0.033, 0.16};
+  turtlelib::WheelVelocities new_wheel_vel_{0.0, 0.0};
+  turtlelib::Wheel wheel_pos_{0.0, 0.0}, abs_wheel_pos_{0.0, 0.0};
+  turtlelib::Twist2D body_{0.0, 0.0, 0.0};
+  turtlelib::Robot_configuration r_;
+  nuturtlebot_msgs::msg::SensorData sensor_data_;
+
+  // Create objects
+  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::QoS qos_profile;
+  rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr timestep_publisher_;
+  rclcpp::Publisher<nuturtlebot_msgs::msg::SensorData>::SharedPtr sensor_data_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr obstacles_publisher_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr walls_publisher_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_server_;
+  rclcpp::Service<nusim::srv::Teleport>::SharedPtr teleport_server_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+  rclcpp::Subscription<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr wheel_cmd_sub_;
+
   /// \brief Reset the simulation
   /// \param Request: empty
   /// \param Responce: empty
@@ -305,36 +385,51 @@ private:
     obstacles_publisher_->publish(obstacles_);
   }
 
+  /// \brief Uses wheel command from mcu to rad/sec
+  /// \param msg: wheel commands that get converted to wheel velocities
+  void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands & msg)
+  {
+    new_wheel_vel_.left = static_cast<double>(msg.left_velocity) * motor_cmd_per_rad_sec_;
+    new_wheel_vel_.right = static_cast<double>(msg.right_velocity) * motor_cmd_per_rad_sec_;
+  }
+
+  /// \brief Updates the robot config based on the wheel_cmd data and updates robot config for tf
+  void update_config()
+  {
+    wheel_pos_.left = new_wheel_vel_.left / rate_;
+    wheel_pos_.right = new_wheel_vel_.right / rate_;
+    body_ = turtlebot_.ForwardKinematics(wheel_pos_);
+    turtlebot_.configuration();
+    r_ = turtlebot_.configuration();
+    x0_ = r_.x;
+    y0_ = r_.y;
+    theta0_ = r_.theta;
+  }
+
+  /// \brief Updates and publishes sensor data
+  void send_sensor_data()
+  {
+    abs_wheel_pos_.left += wheel_pos_.left;
+    abs_wheel_pos_.right += wheel_pos_.right;
+    sensor_data_.stamp = get_clock()->now();
+    sensor_data_.left_encoder = static_cast<int>(abs_wheel_pos_.left * encoder_ticks_per_rad_);
+    sensor_data_.right_encoder = static_cast<int>(abs_wheel_pos_.right * encoder_ticks_per_rad_);
+    sensor_data_pub_->publish(sensor_data_);
+  }
+
   /// \brief Main simulation timer loop that publishes markers, tf and timestep
   void timer_callback()
   {
     auto message = std_msgs::msg::UInt64();
     message.data = timestep_;
-    //   RCLCPP_INFO_STREAM(get_logger(), "Timestep: " << message.data);
     timestep_publisher_->publish(message);
-    broadcast_turtle();
     timestep_++;
+
+    //Update the robot config based on wheel command and publish sensor data and tf
+    update_config();
+    broadcast_turtle();
+    send_sensor_data();
   }
-
-  // Variables
-  size_t timestep_;
-  double x0_, y0_, theta0_;
-  double xi_, yi_, thetai_;
-  double arena_x_length_, arena_y_length_;
-  double obstacles_r_;
-  int obs_n;
-  std::vector<double> obstacles_x_, obstacles_y_;
-  visualization_msgs::msg::MarkerArray obstacles_, walls_;
-
-  // Create objects
-  rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::QoS qos_profile;
-  rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr timestep_publisher_;
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr obstacles_publisher_;
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr walls_publisher_;
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_server_;
-  rclcpp::Service<nusim::srv::Teleport>::SharedPtr teleport_server_;
-  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 };
 
 /// \brief Main function

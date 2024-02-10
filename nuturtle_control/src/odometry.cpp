@@ -115,7 +115,7 @@ private:
   // Variables
   std::string body_id_, odom_id_, wheel_left_, wheel_right_;
   double wheel_radius_, track_width_;
-  turtlelib::DiffDrive turtlebot_{wheel_radius_, track_width_};
+  turtlelib::DiffDrive turtlebot_;
   turtlelib::Wheel pre_pos_{0.0, 0.0};
   turtlelib::Twist2D body_twist_;
 
@@ -148,11 +148,14 @@ private:
   }
 
   /// \brief Joint States callback which updates the robot odometry and publishes it
+  /// \param msg: Joint state message that updates the robot configuration
   void joint_state_callback(const sensor_msgs::msg::JointState & msg)
   {
     // Getting the twist and updating the robot config
     body_twist_ = turtlebot_.ForwardKinematics(
       {msg.position.at(0) - pre_pos_.left, msg.position.at(1) - pre_pos_.right});
+    std::cout << turtlebot_.configuration().y;
+
 
     // Updating and publishing the odometry
     nav_odom_msg_.header.stamp = get_clock()->now();
@@ -179,8 +182,8 @@ private:
     tf_broadcaster_->sendTransform(geo_odom_tf_);
 
     // Update the previous wheel position
-    pre_pos_.left = msg.position[0];
-    pre_pos_.right = msg.position[1];
+    pre_pos_.left = msg.position.at(0);
+    pre_pos_.right = msg.position.at(1);
   }
 
   /// \brief Resets the robot configuration

@@ -3,6 +3,7 @@
   <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
     <arg name="color" value="red" />
     <arg name="use_rviz" value="false" />
+    <arg name="use_jsp" value="true" />
   </include>
 
   <arg name="config_file_1" default="basic_world.yaml" 
@@ -11,15 +12,15 @@
   <arg name="config_file_2" default="diff_params.yaml" 
    description=".yaml from turtle_description"/>
 
-  <arg name="use_rviz" default="false"
+  <arg name="use_rviz_2" default="false"
     description="rviz for nusim launchfile"/>
 
   <node pkg="nusim" exec="nusim" name="nusim">
     <param from="$(find-pkg-share nusim)/config/$(var config_file_1)"/>
-    <param from="$(find-pkg-share nusim)/config/$(var config_file_2)"/>
+    <param from="$(find-pkg-share nuturtle_description)/config/$(var config_file_2)"/>
   </node>
 
-  <group if="$(eval '\'$(var use_rviz)\' == \'true\'')">
+  <group if="$(eval '\'$(var use_rviz_2)\' == \'true\'')">
     <node name="rviz2" pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share nusim)/config/nusim.rviz"/>
   </group>
 </launch>

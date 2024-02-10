@@ -171,22 +171,19 @@ namespace turtlelib
     Transform2D integrate_twist(Twist2D twist) {
         if (almost_equal(twist.omega, 0.0)) {
             // Pure translation
-            return {
-                {twist.x, twist.y},
-                0.0
-            };
+            Transform2D Tb_b_prime{Vector2D{twist.x,twist.y}};
+            return Tb_b_prime;
         } else {
             // Pure roataion
             Transform2D Ts_s_prime {twist.omega};
 
             // Changing from s to b which is just a shift
             Transform2D Ts_b {
-                {
+                Vector2D{
                     twist.y / twist.omega,
                     -twist.x / twist.omega
-                },
-                0.0
-            };
+                    }
+                };
 
             Transform2D Tb_b_prime;
             Transform2D Ts_prime_b_prime = Ts_b;

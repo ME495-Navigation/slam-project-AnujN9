@@ -140,6 +140,7 @@ private:
   }
 
   /// \brief Command Velocity callback which publishes it to wheel command
+  /// \param msg: twist that commands the robot to move after conversion into motor encoder ticks
   void cmd_vel_callback(const geometry_msgs::msg::Twist & msg)
   {
     twist_.omega = msg.angular.z;
@@ -165,23 +166,24 @@ private:
   }
 
   /// \brief Sensor Data callback which publishes sensor data to joint state publisher
+  /// \param msg: sensor data that gets converted to joint states
   void sensor_callback(const nuturtlebot_msgs::msg::SensorData & msg)
   {
     joint_state_.header.stamp = msg.stamp;
     joint_state_.name = {"wheel_left_joint", "wheel_right_joint"};
     if (!first_data_) {
       // Converting encoder ticks to angle in radians
-      joint_state_.position = {msg.left_encoder / encoder_ticks_per_rad_,
-        msg.right_encoder / encoder_ticks_per_rad_};
+      joint_state_.position = {static_cast<double>(msg.left_encoder) / encoder_ticks_per_rad_,
+        static_cast<double>(msg.right_encoder) / encoder_ticks_per_rad_};
       // Converting positions to velocity
       double time = (joint_state_.header.stamp.sec - previous_js_.header.stamp.sec) +
         (joint_state_.header.stamp.nanosec - previous_js_.header.stamp.nanosec) * 1e-9;
-      joint_state_.velocity = {joint_state_.position.at(0) - previous_js_.position.at(0) / time,
-        joint_state_.position.at(0) - previous_js_.position.at(0) / time};
+      joint_state_.velocity = {joint_state_.position.at(0) / time,
+        joint_state_.position.at(0) / time};
     } else {
       // For the first encoder value
-      joint_state_.position = {msg.left_encoder / encoder_ticks_per_rad_,
-        msg.right_encoder / encoder_ticks_per_rad_};
+      joint_state_.position = {static_cast<double>(msg.left_encoder) / encoder_ticks_per_rad_,
+        static_cast<double>(msg.right_encoder) / encoder_ticks_per_rad_};
       joint_state_.velocity = {0.0, 0.0};
       first_data_ = false;
     }

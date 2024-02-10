@@ -50,7 +50,7 @@ namespace turtlelib
         /// \brief radius of wheels
         double wheel_radius;
         /// \brief distance between the wheels
-        double wheel_track;
+        double track_width;
         /// \brief robot configuration
         Robot_configuration config;
         /// \brief position of both wheels
@@ -73,7 +73,7 @@ namespace turtlelib
 
         /// \brief the robots body configuration
         /// \return robots current body configuration
-        Robot_configuration configuration();
+        Robot_configuration configuration() const;
 
         /// \brief Calculates the forward kinematics from the new wheel positions
         /// \param delta_positions - difference between wheel positions
