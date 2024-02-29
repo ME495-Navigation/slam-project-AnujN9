@@ -1,0 +1,9 @@
+Code does not compile on my computer. I recommend that you clone it into a clean workspace and check again. As per the syllabus I reserve the right to give an automatic 0 for code that does not compile.
+
+For now this means I am unable to provide feedback to you based on running your code. I still provided feedback based on reading code.
+
+There are also far too few git commits for how much code you wrote.
+
+I recommend verifying the following
+1. Robot traverses 1 m in 10 seconds at 0.1 m/s, with a clean Rviz (that is no errors or warnings in any of the display items)
+   Robot turns properly

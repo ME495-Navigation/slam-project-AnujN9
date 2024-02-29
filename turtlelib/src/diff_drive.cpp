@@ -62,6 +62,7 @@ namespace turtlelib
         }
         else
         {
+            // do not do (1/X) *, instead just (expr)/X. Use 2.0 instead of 2
             wheel_vel.left = (1/wheel_radius)*(-(track_width/2)*twist.omega + twist.x); // Equation 1
             wheel_vel.right = (1/wheel_radius)*((track_width/2)*twist.omega + twist.x); // Equation 2
         }
