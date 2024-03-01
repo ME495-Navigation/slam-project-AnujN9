@@ -72,7 +72,6 @@ install(TARGETS
 install(DIRECTORY
   launch
   config
-  test
   src
   DESTINATION share/${PROJECT_NAME}/
 )
