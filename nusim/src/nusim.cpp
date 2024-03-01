@@ -196,6 +196,7 @@ public:
     yi_ = y0_;
     thetai_ = theta0_;
 
+    // turtlelib::Robot_configuration con{x0_,y0_,theta0_};
     turtlebot_ = turtlelib::DiffDrive{wheel_radius_, track_width_};
 
     if (obstacles_x_.size() == obstacles_y_.size()) {
@@ -531,7 +532,6 @@ private:
   }
 
   /// \brief Publishes the fake sensor data of obstacles
-  // TODO check if this works
   void publish_fake_sensor()
   {
     visualization_msgs::msg::MarkerArray fa;
@@ -555,8 +555,9 @@ private:
         o.scale.y = 2 * obstacles_r_;
         o.scale.z = 0.25;
         turtlelib::Transform2D Two(turtlelib::Vector2D{obstacles_x_.at(i), obstacles_y_.at(i)}, 0);
-        turtlelib::Robot_configuration r = turtlebot_.configuration();
-        turtlelib::Transform2D Twr(turtlelib::Vector2D{r.x, r.y}, r.theta);
+        turtlelib::Transform2D Twr(turtlelib::Vector2D{
+          turtlebot_.configuration().x, turtlebot_.configuration().y},
+          turtlebot_.configuration().theta);
         turtlelib::Vector2D pos = (Twr.inv() * Two).translation();
         auto pos_noise = o_noise(get_random());
         o.pose.position.x = pos.x + pos_noise;
@@ -585,16 +586,16 @@ private:
     lidar_scan_data_.range_max = lidar_max_range_;
     lidar_scan_data_.ranges.clear();
     for (int i = 0; i < lidar_sample_; i++) {
-      turtlelib::Robot_configuration r_con = turtlebot_.configuration();
       double lidar_val = lidar_max_range_;
-      const auto x_max = r_con.x +
-        lidar_max_range_ * cos(i * lidar_angle_increment_ + r_con.theta);
-      const auto y_max = r_con.y +
-        lidar_max_range_ * sin(i * lidar_angle_increment_ + r_con.theta);
-      const auto slope = (y_max - r_con.y) / (x_max - r_con.x);
+      const auto x_max = turtlebot_.configuration().x +
+        lidar_max_range_ * cos(i * lidar_angle_increment_ + turtlebot_.configuration().theta);
+      const auto y_max = turtlebot_.configuration().y +
+        lidar_max_range_ * sin(i * lidar_angle_increment_ + turtlebot_.configuration().theta);
+      const auto slope = (y_max - turtlebot_.configuration().y)
+        / (x_max - turtlebot_.configuration().x);
       for (size_t j = 0; j < obs_n; j++) {
-        r_con = turtlebot_.configuration();
-        const auto val = r_con.y - slope * r_con.x - obstacles_y_.at(j);
+        const auto val = turtlebot_.configuration().y - slope
+          * turtlebot_.configuration().x - obstacles_y_.at(j);
         const auto a = 1.0 + slope * slope;
         const auto b = 2 * (val * slope - obstacles_x_.at(j));
         const auto c = obstacles_x_.at(j) * obstacles_x_.at(j) + val * val -
@@ -602,59 +603,80 @@ private:
         const auto det = b * b - 4 * a * c;
         if (det < 0) { // no solution
           // Checking walls
-          r_con = turtlebot_.configuration();
           const double wall1_x = 0.5 * arena_x_length_;
-          const double wall1_y = slope * (wall1_x - r_con.x) + r_con.y;
-          const bool direction_wall1_x = (r_con.x <= wall1_x) && (wall1_x <= x_max);
-          const auto distance1 = sqrt(pow((wall1_x - r_con.x), 2) + pow((wall1_y - r_con.y), 2));
+          const double wall1_y = slope * (wall1_x - turtlebot_.configuration().x)
+            + turtlebot_.configuration().y;
+          const bool direction_wall1_x = (turtlebot_.configuration().x <= wall1_x)
+            && (wall1_x <= x_max);
+          const auto distance1 = sqrt(pow((wall1_x - turtlebot_.configuration().x), 2)
+            + pow((wall1_y - turtlebot_.configuration().y), 2));
           if ((distance1 < lidar_max_range_) && (distance1 < lidar_val) && direction_wall1_x) {
             lidar_val = distance1;
           }
           const double wall2_x = -0.5 * arena_x_length_;
-          const double wall2_y = slope * (wall2_x - r_con.x) + r_con.y;
-          const bool direction_wall2_x = (x_max <= wall2_x) && (wall2_x <= r_con.x);
-          const auto distance2 = sqrt(pow((wall2_x - r_con.x), 2) + pow((wall2_y - r_con.y), 2));
+          const double wall2_y = slope * (wall2_x - turtlebot_.configuration().x)
+            + turtlebot_.configuration().y;
+          const bool direction_wall2_x = (x_max <= wall2_x)
+            && (wall2_x <= turtlebot_.configuration().x);
+          const auto distance2 = sqrt(pow((wall2_x - turtlebot_.configuration().x), 2)
+            + pow((wall2_y - turtlebot_.configuration().y), 2));
           if ((distance2 < lidar_max_range_) && (distance2 < lidar_val) && direction_wall2_x) {
             lidar_val = distance2;
           }
           const double wall3_y = 0.5 * arena_y_length_;
-          const double wall3_x = (wall3_y - r_con.y) / slope + r_con.x;
-          const bool direction_wall3_y = (r_con.y <= wall3_y) && (wall3_y <= y_max);
-          const auto distance3 = sqrt(pow((wall3_x - r_con.x), 2) + pow((wall3_y - r_con.y), 2));
+          const double wall3_x = (wall3_y - turtlebot_.configuration().y)
+            / slope + turtlebot_.configuration().x;
+          const bool direction_wall3_y = (turtlebot_.configuration().y <= wall3_y)
+            && (wall3_y <= y_max);
+          const auto distance3 = sqrt(pow((wall3_x - turtlebot_.configuration().x), 2)
+            + pow((wall3_y - turtlebot_.configuration().y), 2));
           if ((distance3 < lidar_max_range_) && (distance3 < lidar_val) && direction_wall3_y) {
             lidar_val = distance3;
           }
           const double wall4_y = -0.5 * arena_y_length_;
-          const double wall4_x = (wall4_y - r_con.y) / slope + r_con.x;
-          const bool direction_wall4_y = (y_max <= wall4_y) && (wall4_y <= r_con.y);
-          const auto distance4 = sqrt(pow((wall4_x - r_con.x), 2) + pow((wall4_y - r_con.y), 2));
+          const double wall4_x = (wall4_y - turtlebot_.configuration().y)
+            / slope + turtlebot_.configuration().x;
+          const bool direction_wall4_y = (y_max <= wall4_y)
+            && (wall4_y <= turtlebot_.configuration().y);
+          const auto distance4 = sqrt(pow((wall4_x - turtlebot_.configuration().x), 2)
+            + pow((wall4_y - turtlebot_.configuration().y), 2));
           if ((distance4 < lidar_max_range_) && (distance4 < lidar_val) && direction_wall4_y) {
             lidar_val = distance4;
           }
         } else if (det == 0.0) { // 1 solution
-          r_con = turtlebot_.configuration();
           const double o_x = (-1.0 * b) / (2 * a);
-          const double o_y = slope * (o_x - r_con.x) + r_con.y;
-          const auto distance = sqrt(pow((o_x - r_con.x), 2) + pow((o_y - r_con.y), 2));
-          const double directionx = ((o_x - r_con.x) / (x_max - r_con.x));
-          const double directiony = ((o_y - r_con.y) / (y_max - r_con.y));
+          const double o_y = slope * (o_x - turtlebot_.configuration().x)
+            + turtlebot_.configuration().y;
+          const auto distance = sqrt(pow((o_x - turtlebot_.configuration().x), 2)
+            + pow((o_y - turtlebot_.configuration().y), 2));
+          const double directionx = ((o_x - turtlebot_.configuration().x)
+            / (x_max - turtlebot_.configuration().x));
+          const double directiony = ((o_y - turtlebot_.configuration().y)
+            / (y_max - turtlebot_.configuration().y));
           if ((distance < lidar_max_range_) && (distance < lidar_val) &&
             (directionx > 0.0) && (directiony > 0.0))
           {
             lidar_val = distance;
           }
         } else if (det > 0) { // 2 solutions
-          r_con = turtlebot_.configuration();
           const double x1 = (-1.0 * b + sqrt(det)) / (2 * a);
-          const double y1 = slope * (x1 - r_con.x) + r_con.y;
-          const auto distance5 = sqrt(pow((x1 - r_con.x), 2) + pow((y1 - r_con.y), 2));
-          const double direction1x = ((x1 - r_con.x) / (x_max - r_con.x));
-          const double direction1y = ((y1 - r_con.y) / (y_max - r_con.y));
+          const double y1 = slope * (x1 - turtlebot_.configuration().x)
+            + turtlebot_.configuration().y;
+          const auto distance5 = sqrt(pow((x1 - turtlebot_.configuration().x), 2)
+            + pow((y1 - turtlebot_.configuration().y), 2));
+          const double direction1x = ((x1 - turtlebot_.configuration().x)
+            / (x_max - turtlebot_.configuration().x));
+          const double direction1y = ((y1 - turtlebot_.configuration().y)
+            / (y_max - turtlebot_.configuration().y));
           const double x2 = (-1.0 * b - sqrt(det)) / (2 * a);
-          const double y2 = slope * (x2 - r_con.x) + r_con.y;
-          const auto distance6 = sqrt(pow((x2 - r_con.x), 2) + pow((y2 - r_con.y), 2));
-          const double direction2x = ((x2 - r_con.x) / (x_max - r_con.x));
-          const double direction2y = ((y2 - r_con.y) / (y_max - r_con.y));
+          const double y2 = slope * (x2 - turtlebot_.configuration().x)
+            + turtlebot_.configuration().y;
+          const auto distance6 = sqrt(pow((x2 - turtlebot_.configuration().x), 2)
+            + pow((y2 - turtlebot_.configuration().y), 2));
+          const double direction2x = ((x2 - turtlebot_.configuration().x)
+            / (x_max - turtlebot_.configuration().x));
+          const double direction2y = ((y2 - turtlebot_.configuration().y)
+            / (y_max - turtlebot_.configuration().y));
           if ((distance5 < lidar_max_range_) && (distance5 < lidar_val) &&
             (direction1x > 0.0) && (direction1y > 0.0))
           {
