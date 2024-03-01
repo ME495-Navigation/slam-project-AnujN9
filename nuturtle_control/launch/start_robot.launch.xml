@@ -26,13 +26,13 @@
     <include file="$(find-pkg-share nusim)/launch/nusim.launch.xml">
       <arg name="color" value="red" />
       <arg name="use_rviz_2" value="false"/>
-      <arg name="use_jsp" value="true"/>
+      <arg name="use_jsp" value="false"/>
       <arg name="config_file_1" value="basic_world.yaml"/>
       <arg name="config_file_2" value="diff_params.yaml"/>
     </include>
     <node pkg="nuturtle_control" exec="odometry">
       <param from="$(find-pkg-share nuturtle_description)/config/diff_params.yaml"/>
-      <param name="odom_id" value="odom"/>
+      <param name="odom_id" value="blue/odom"/>
       <param name="body_id" value="blue/base_footprint"/>
       <param name="wheel_left" value="wheel_left_joint"/>
       <param name="wheel_right" value="wheel_right_joint"/>
@@ -69,6 +69,10 @@
       <param from="$(find-pkg-share nuturtle_description)/config/diff_params.yaml"/>
       <remap from="joint_states" to="blue/joint_states"/>
     </node>
+    <include file="$(find-pkg-share hls_lfcd_lds_driver)/launch/hlds_laser.launch.py">
+    <arg name="port" value="/dev/ttyUSB0"/>
+    <arg name="frame_id" value="blue/base_scan"/>
+    </include>
   </group>
 
   <group if="$(eval '\'$(var robot)\' == \'none\'')">
@@ -85,7 +89,7 @@
   <node pkg="tf2_ros" exec="static_transform_publisher"
     args="
     --frame-id nusim/world
-    --child-frame-id odom
+    --child-frame-id blue/odom
     --x 0
     --y 0
     --z 0

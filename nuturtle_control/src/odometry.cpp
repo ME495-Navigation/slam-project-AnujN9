@@ -38,6 +38,8 @@
 #include "tf2_ros/transform_broadcaster.h"
 #include "tf2/LinearMath/Quaternion.h"
 #include "nuturtle_control/srv/initial_pose.hpp"
+#include "nav_msgs/msg/path.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 
 using namespace std::chrono_literals;
 
@@ -88,6 +90,8 @@ public:
 
     // Publisher
     odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
+    path_pub_ = create_publisher<nav_msgs::msg::Path>(
+      "blue/path", 10);
 
     //Service
     initial_pose_srv_ = create_service<nuturtle_control::srv::InitialPose>(
@@ -122,9 +126,11 @@ private:
   nav_msgs::msg::Odometry nav_odom_msg_;
   geometry_msgs::msg::TransformStamped geo_odom_tf_;
   tf2::Quaternion quaternion_;
+  nav_msgs::msg::Path blue_path_;
 
   // Create objects
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
   rclcpp::Service<nuturtle_control::srv::InitialPose>::SharedPtr initial_pose_srv_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -156,7 +162,6 @@ private:
       {msg.position.at(0) - pre_pos_.left, msg.position.at(1) - pre_pos_.right});
     std::cout << turtlebot_.configuration().y;
 
-
     // Updating and publishing the odometry
     nav_odom_msg_.header.stamp = get_clock()->now();
     nav_odom_msg_.pose.pose.position.x = turtlebot_.configuration().x;
@@ -180,6 +185,22 @@ private:
     geo_odom_tf_.transform.rotation.z = quaternion_.z();
     geo_odom_tf_.transform.rotation.w = quaternion_.w();
     tf_broadcaster_->sendTransform(geo_odom_tf_);
+
+    // Publish the blue path
+    geometry_msgs::msg::PoseStamped pose;
+    pose.header.frame_id = "nusim/world";
+    pose.header.stamp = get_clock()->now();
+    pose.pose.position.x = turtlebot_.configuration().x;
+    pose.pose.position.y = turtlebot_.configuration().y;
+    pose.pose.position.z = 0.0;
+    pose.pose.orientation.x = quaternion_.x();
+    pose.pose.orientation.y = quaternion_.y();
+    pose.pose.orientation.z = quaternion_.z();
+    pose.pose.orientation.w = quaternion_.w();
+    blue_path_.header.stamp = get_clock()->now();
+    blue_path_.header.frame_id = "nusim/world";
+    blue_path_.poses.push_back(pose);
+    path_pub_->publish(blue_path_);
 
     // Update the previous wheel position
     pre_pos_.left = msg.position.at(0);

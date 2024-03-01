@@ -9,3 +9,14 @@
     encoder_ticks_per_rad:  651.8986469
     # 2^12 by 2pi
     collision_radius: 0.11
+    # new params
+    input_noise: 0.0
+    slip_fraction: 0.0
+    max_range: 1.5
+    basic_sensor_variance: 0.0
+    lidar_min_range: 0.12
+    lidar_max_range: 3.5
+    lidar_angle_increment: 0.01745329238474369
+    lidar_samples: 360.0
+    lidar_resolution: 1.0
+    lidar_noise: 0.0

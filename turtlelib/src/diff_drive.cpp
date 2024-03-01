@@ -38,7 +38,7 @@ namespace turtlelib
 
         // Equation 3
         double body_omega = (wheel_radius/track_width) * (wheel_vel.right - wheel_vel.left);
-        double body_x = (wheel_radius/2)*(wheel_vel.left + wheel_vel.right);
+        double body_x = (wheel_radius/2.0)*(wheel_vel.left + wheel_vel.right);
         double body_y = 0.0;
         Twist2D body{body_omega,body_x,body_y};
 
@@ -62,10 +62,15 @@ namespace turtlelib
         }
         else
         {
-            wheel_vel.left = (1/wheel_radius)*(-(track_width/2)*twist.omega + twist.x); // Equation 1
-            wheel_vel.right = (1/wheel_radius)*((track_width/2)*twist.omega + twist.x); // Equation 2
+            wheel_vel.left = (-(track_width/2.0)*twist.omega + twist.x)/wheel_radius; // Equation 1
+            wheel_vel.right = ((track_width/2.0)*twist.omega + twist.x)/wheel_radius; // Equation 2
         }
         return wheel_vel;
     }
     // ##### Verfied with Aditya and Damien, End_Citation 1 & 2
+
+    void DiffDrive::SetConfiguration(Robot_configuration robot_config)
+    {
+        config = robot_config;
+    }
 }

@@ -84,6 +84,10 @@ namespace turtlelib
         /// \param twist - the body twist to preform inverse kinematics on
         /// \return wheel velocities required for the twist
         WheelVelocities InverseKinematics(Twist2D twist);
+
+        /// \brief sets the robots body configuration
+        /// \param robot_config body configuration to be set to
+        void SetConfiguration(Robot_configuration robot_config);
     };
 
 }
