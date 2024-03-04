@@ -7,3 +7,4 @@ This repository consists of several ROS packages
 - turtlelib - C++ library that performs the 2D transformations
 - nusim - Simulation of the Turtlebot
 - nuturtle_control - Controls the turtlebot in rviz and on the real robot
+- nuslam - Implementation of EKF Slam

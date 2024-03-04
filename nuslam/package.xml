@@ -12,6 +12,25 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
+  <depend>ros2launch</depend>
+  <depend>rclcpp</depend>
+  <depend>nuturtlebot_msgs</depend>
+  <depend>turtlelib</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>nuturle_description</depend>
+  <depend>nusim</depend>
+  <depend>nuturtle_control</depend>
+  <depend>Armadillo</depend>
+
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

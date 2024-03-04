@@ -11,6 +11,7 @@
 ///
 /// PUBLISHES:
 ///     \param /odom (nav_msgs::msg::Odometry): Publishes odometry state
+///     \param /blue/path (nav_msgs::msg::Odometry): Publishes the path of the blue robot
 ///
 /// SUBSCRIBES:
 ///     \param /joint_states (sensor_msgs::msg:JointState): Recieves joint states to update odom
@@ -119,6 +120,7 @@ private:
   // Variables
   std::string body_id_, odom_id_, wheel_left_, wheel_right_;
   double wheel_radius_, track_width_;
+  int iterations = 1;
   turtlelib::DiffDrive turtlebot_;
   turtlelib::Wheel pre_pos_{0.0, 0.0};
   turtlelib::Twist2D body_twist_;
@@ -187,20 +189,26 @@ private:
     tf_broadcaster_->sendTransform(geo_odom_tf_);
 
     // Publish the blue path
-    geometry_msgs::msg::PoseStamped pose;
-    pose.header.frame_id = "nusim/world";
-    pose.header.stamp = get_clock()->now();
-    pose.pose.position.x = turtlebot_.configuration().x;
-    pose.pose.position.y = turtlebot_.configuration().y;
-    pose.pose.position.z = 0.0;
-    pose.pose.orientation.x = quaternion_.x();
-    pose.pose.orientation.y = quaternion_.y();
-    pose.pose.orientation.z = quaternion_.z();
-    pose.pose.orientation.w = quaternion_.w();
-    blue_path_.header.stamp = get_clock()->now();
-    blue_path_.header.frame_id = "nusim/world";
-    blue_path_.poses.push_back(pose);
-    path_pub_->publish(blue_path_);
+    if (iterations % 100 == 0) {
+      geometry_msgs::msg::PoseStamped pose;
+      pose.header.frame_id = "nusim/world";
+      pose.header.stamp = get_clock()->now();
+      pose.pose.position.x = turtlebot_.configuration().x;
+      pose.pose.position.y = turtlebot_.configuration().y;
+      pose.pose.position.z = 0.0;
+      pose.pose.orientation.x = quaternion_.x();
+      pose.pose.orientation.y = quaternion_.y();
+      pose.pose.orientation.z = quaternion_.z();
+      pose.pose.orientation.w = quaternion_.w();
+      blue_path_.header.stamp = get_clock()->now();
+      blue_path_.header.frame_id = "nusim/world";
+      blue_path_.poses.push_back(pose);
+      path_pub_->publish(blue_path_);
+      if (iterations == 10000) {
+        iterations = 1;
+      }
+    }
+    iterations++;
 
     // Update the previous wheel position
     pre_pos_.left = msg.position.at(0);

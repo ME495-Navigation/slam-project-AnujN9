@@ -263,6 +263,7 @@ private:
   // Variables
   size_t timestep_;
   int rate_;
+  int iterations = 1;
   double x0_, y0_, theta0_;
   double xi_, yi_, thetai_;
   double arena_x_length_, arena_y_length_;
@@ -352,19 +353,25 @@ private:
     tf_broadcaster_->sendTransform(t_);
 
     // Publish the red path
-    pose.header.frame_id = "nusim/world";
-    pose.header.stamp = get_clock()->now();
-    pose.pose.position.x = x0_;
-    pose.pose.position.y = y0_;
-    pose.pose.position.z = 0.0;
-    pose.pose.orientation.x = q_.x();
-    pose.pose.orientation.y = q_.y();
-    pose.pose.orientation.z = q_.z();
-    pose.pose.orientation.w = q_.w();
-    red_path_.header.stamp = get_clock()->now();
-    red_path_.header.frame_id = "nusim/world";
-    red_path_.poses.push_back(pose);
-    path_pub_->publish(red_path_);
+    if (iterations % 100 == 0) {
+      pose.header.frame_id = "nusim/world";
+      pose.header.stamp = get_clock()->now();
+      pose.pose.position.x = x0_;
+      pose.pose.position.y = y0_;
+      pose.pose.position.z = 0.0;
+      pose.pose.orientation.x = q_.x();
+      pose.pose.orientation.y = q_.y();
+      pose.pose.orientation.z = q_.z();
+      pose.pose.orientation.w = q_.w();
+      red_path_.header.stamp = get_clock()->now();
+      red_path_.header.frame_id = "nusim/world";
+      red_path_.poses.push_back(pose);
+      path_pub_->publish(red_path_);
+      if (iterations == 10000) {
+        iterations = 1;
+      }
+    }
+    iterations++;
   }
 
   /// \brief Create walls of the arena and publishes them to a topic
@@ -466,7 +473,7 @@ private:
       obstacle_.action = visualization_msgs::msg::Marker::ADD;
       obstacle_.pose.position.x = obstacles_x_.at(i);
       obstacle_.pose.position.y = obstacles_y_.at(i);
-      obstacle_.pose.position.z = 0.0;
+      obstacle_.pose.position.z = 0.125;
       obstacle_.pose.orientation.x = 0.0;
       obstacle_.pose.orientation.y = 0.0;
       obstacle_.pose.orientation.z = 0.0;
@@ -563,7 +570,7 @@ private:
         o.pose.position.x = pos.x + pos_noise;
         pos_noise = o_noise(get_random());
         o.pose.position.y = pos.y + pos_noise;
-        o.pose.position.z = 0.0;
+        o.pose.position.z = 0.125;
       } else {
         o.action = 2;
       }

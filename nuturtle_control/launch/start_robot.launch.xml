@@ -84,6 +84,11 @@
       <arg name="use_rviz" value="false" />
       <arg name="use_jsp" value="false" />
     </include>
+    <node pkg="nusim" exec="nusim" name="nuwall">
+      <param from="$(find-pkg-share nusim)/config/basic_world.yaml"/>
+      <param from="$(find-pkg-share nuturtle_description)/config/diff_params.yaml"/>
+      <param name="draw_only" value="true"/>
+    </node>
   </group>
 
   <node pkg="tf2_ros" exec="static_transform_publisher"
