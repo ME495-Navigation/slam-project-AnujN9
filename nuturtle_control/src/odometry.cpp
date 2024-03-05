@@ -162,7 +162,6 @@ private:
     // Getting the twist and updating the robot config
     body_twist_ = turtlebot_.ForwardKinematics(
       {msg.position.at(0) - pre_pos_.left, msg.position.at(1) - pre_pos_.right});
-    std::cout << turtlebot_.configuration().y;
 
     // Updating and publishing the odometry
     nav_odom_msg_.header.stamp = get_clock()->now();

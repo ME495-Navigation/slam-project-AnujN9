@@ -12,9 +12,10 @@
 /// PUBLISHES:
 ///     \param /estimated (visualization_msgs::msg::MarkerArray):
 ///     \param /green/path (nav_msgs::msg::Path): Publishes path of the green robot
+///     \param /odom (nav_msgs::msg::Odometry): Publishes odometry state
 ///
 /// SUBSCRIBES:
-///     \param /odom (nav_msgs::msg::Odometry): Recieves odom of the robot
+///     \param /joint_states (sensor_msgs::msg:JointState): Recieves joint states to update odom
 ///     \param /fake_sensor (visualization_msgs::msg::MarkerArray): Recieves sensor data of
 ///              the robot
 ///
@@ -95,17 +96,18 @@ public:
     input_noise_ = get_parameter("input_noise").get_parameter_value().get<double>();
 
     // Subscriber
-    odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
-      "odom", 10,
-      std::bind(&Slam::odom_callback, this, std::placeholders::_1));
     fake_sensor_sub_ = create_subscription<visualization_msgs::msg::MarkerArray>(
       "fake_sensor", 10,
       std::bind(&Slam::sensor_callback, this, std::placeholders::_1));
+    joint_state_sub_ = create_subscription<sensor_msgs::msg::JointState>(
+      "joint_states", 10,
+      std::bind(&Slam::joint_state_callback, this, std::placeholders::_1));
 
     // Publisher
     estimated_pub_ = create_publisher<visualization_msgs::msg::MarkerArray>("estimated_obs", 10);
     path_pub_ = create_publisher<nav_msgs::msg::Path>(
       "green/path", 10);
+    odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
 
     // Initialize the transform broadcaster
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -117,6 +119,9 @@ public:
     odom_robot_.header.frame_id = odom_id_;
     odom_robot_.child_frame_id = body_id_;
     odom_robot_.transform.translation.z = 0.0;
+    nav_odom_msg_.header.frame_id = odom_id_;
+    nav_odom_msg_.child_frame_id = body_id_;
+    nav_odom_msg_.pose.pose.position.z = 0.0;
     map_odom_tf_.header.frame_id = "map";
     map_odom_tf_.child_frame_id = odom_id_;
     map_odom_tf_.transform.translation.z = 0.0;
@@ -124,22 +129,26 @@ public:
     // Slam initialization
     prev_state_ = arma::vec{size_, arma::fill::zeros};
     slam_state_ = arma::vec{size_, arma::fill::zeros};
-    prev_covariance_ = arma::mat{size_, size_, arma::fill::zeros}; // Covariance
+    covariance_ = arma::mat{size_, size_, arma::fill::zeros}; // Covariance
+
     Q_bar_ = arma::mat{size_, size_, arma::fill::zeros};
-    R_ = arma::mat{2 * max_obs_, 2 * max_obs_, arma::fill::zeros};
+    Q_bar_.at(0, 0) = 1e-3; // THANK YOU CARTER
+    Q_bar_.at(1, 1) = 1e-3;
+    Q_bar_.at(2, 2) = 1e-3;
+    R_ = arma::mat{static_cast<unsigned long int>(2 * max_obs_),
+      static_cast<unsigned long int>(2 * max_obs_), arma::fill::zeros};
 
     Sigma_Q_ = turtlelib::Transform2D(
       turtlelib::Vector2D{
       turtlebot_.configuration().x, turtlebot_.configuration().y},
       turtlebot_.configuration().theta);   // previous odom location
 
-    for (int i = 3; i < size_; i++) {
-      prev_covariance_(i, i) = 1e9;
+    for (int i = 3; i < static_cast<int>(size_); i++) {
+      covariance_(i, i) = 1e6;
     }
 
-    std::normal_distribution<> noise{0, input_noise_};
     for (int i = 0; i < 2 * max_obs_; i++) {
-      R_.at(i, i) = noise(get_random());
+      R_.at(i, i) = 1e-3;  // THANK YOU CARTER
     }
   }
 
@@ -148,6 +157,7 @@ private:
   std::string body_id_, odom_id_, wheel_left_, wheel_right_;
   double wheel_radius_, track_width_, input_noise_;
   turtlelib::DiffDrive turtlebot_;
+  turtlelib::Robot_configuration Q_;
   turtlelib::Wheel pre_pos_{0.0, 0.0};
   turtlelib::Twist2D body_twist_;
   int max_obs_ = 30;
@@ -155,20 +165,23 @@ private:
   double obs_h_ = 0.25, obs_r_ = 0.038;
   turtlelib::Transform2D Tmo_, Tmb_, Tob_;
   turtlelib::Transform2D Sigma_Q_;
-  int size_ = 2 * max_obs_ + 3;
+  unsigned long size_ = 2 * max_obs_ + 3;
   arma::vec prev_state_;
   arma::vec slam_state_;
-  arma::mat prev_covariance_;
+  arma::mat covariance_;
   arma::mat Q_bar_;
   arma::mat R_;
   std::vector<bool> marker_seen_ = std::vector<bool>(max_obs_, false);
 
+  nav_msgs::msg::Odometry nav_odom_msg_;
+  tf2::Quaternion quaternion_;
   geometry_msgs::msg::TransformStamped odom_robot_, map_odom_tf_;
   nav_msgs::msg::Path green_path_;
 
   // Create objects
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
   rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr fake_sensor_sub_;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr estimated_pub_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -191,46 +204,42 @@ private:
     }
   }
 
-  /// \brief Odometry callback which provides current odom reading
-  /// \param msg: Odometry message of the robot configuration
-  void odom_callback(const nav_msgs::msg::Odometry & msg)
+  /// \brief Joint States callback which updates the robot odometry and publishes it
+  /// \param msg: Joint state message that updates the robot configuration
+  void joint_state_callback(const sensor_msgs::msg::JointState & msg)
   {
-    // Convert the odom msg to twist and current pose
-    auto q = msg.pose.pose.orientation;
-    auto x = q.x;
-    auto y = q.y;
-    auto z = q.z;
-    auto w = q.w;
-    auto a = 2 * (w * z + x * y);
-    auto b = 1 - 2 * (y * y + z * z);
-    auto z_rot = std::atan2(a, b);
-    Tob_ = turtlelib::Transform2D(
-      turtlelib::Vector2D{
-      msg.pose.pose.position.x, msg.pose.pose.position.y}, z_rot);
+    // Getting the twist and updating the robot config
+    body_twist_ = turtlebot_.ForwardKinematics(
+      {msg.position.at(0) - pre_pos_.left, msg.position.at(1) - pre_pos_.right});
+    Q_ = turtlebot_.configuration();
 
-    //Publish the tf
+    // Updating and publishing the odometry
+    nav_odom_msg_.header.stamp = get_clock()->now();
+    nav_odom_msg_.pose.pose.position.x = turtlebot_.configuration().x;
+    nav_odom_msg_.pose.pose.position.y = turtlebot_.configuration().y;
+    quaternion_.setRPY(0, 0, turtlebot_.configuration().theta);
+    nav_odom_msg_.pose.pose.orientation.x = quaternion_.x();
+    nav_odom_msg_.pose.pose.orientation.y = quaternion_.y();
+    nav_odom_msg_.pose.pose.orientation.z = quaternion_.z();
+    nav_odom_msg_.pose.pose.orientation.w = quaternion_.w();
+    nav_odom_msg_.twist.twist.linear.x = body_twist_.x;
+    nav_odom_msg_.twist.twist.linear.y = body_twist_.y;
+    nav_odom_msg_.twist.twist.angular.z = body_twist_.omega;
+    odom_pub_->publish(nav_odom_msg_);
+
+    // Broadcasting the transform
     odom_robot_.header.stamp = get_clock()->now();
-    odom_robot_.transform.translation.x = Tob_.translation().x;
-    odom_robot_.transform.translation.y = Tob_.translation().y;
-    odom_robot_.transform.rotation = q;
+    odom_robot_.transform.translation.x = turtlebot_.configuration().x;
+    odom_robot_.transform.translation.y = turtlebot_.configuration().y;
+    odom_robot_.transform.rotation.x = quaternion_.x();
+    odom_robot_.transform.rotation.y = quaternion_.y();
+    odom_robot_.transform.rotation.z = quaternion_.z();
+    odom_robot_.transform.rotation.w = quaternion_.w();
     tf_broadcaster_->sendTransform(odom_robot_);
 
-    if (iterations % 50 == 0) {
-      geometry_msgs::msg::PoseStamped rp;
-      green_path_.header.stamp = get_clock()->now();
-      green_path_.header.frame_id = odom_id_;
-      rp.header.stamp = get_clock()->now();
-      rp.header.frame_id = odom_id_;
-      rp.pose.position.x = Tob_.translation().x;
-      rp.pose.position.y = Tob_.translation().y;
-      rp.pose.orientation = q;
-      green_path_.poses.push_back(rp);
-      path_pub_->publish(green_path_);
-      if (iterations == 10000) {
-        iterations = 1;
-      }
-    }
-    iterations++;
+    // Update the previous wheel position
+    pre_pos_.left = msg.position.at(0);
+    pre_pos_.right = msg.position.at(1);
   }
 
   /// \brief Fake sensor callback where cextended Kalman filter SLAM is calculated
@@ -253,13 +262,8 @@ private:
     A.at(1, 0) += -(slam_state_.at(2) - prev_state_.at(2));
     A.at(2, 0) += (slam_state_.at(1) - prev_state_.at(1));
 
-    std::normal_distribution<> noise{0, input_noise_};
-    Q_bar_.at(0, 0) = noise(get_random());
-    Q_bar_.at(1, 1) = noise(get_random());
-    Q_bar_.at(2, 2) = noise(get_random());
-
     // Covariance prediction
-    arma::mat covariance = A * prev_covariance_ * A.t() + Q_bar_;
+    covariance_ = A * covariance_ * A.t() + Q_bar_;
 
     for (size_t i = 0; i < msg.markers.size(); i++) {
       const auto action = msg.markers.at(i).action;
@@ -268,23 +272,23 @@ private:
       }
       const auto dx = msg.markers.at(i).pose.position.x;
       const auto dy = msg.markers.at(i).pose.position.y;
-      auto r = sqrt(dx * dx + dy * dy);
-      auto phi = turtlelib::normalize_angle(atan2(dy, dx));
+      auto r = std::sqrt(dx * dx + dy * dy);
+      auto phi = turtlelib::normalize_angle(std::atan2(dy, dx));
 
       if (!marker_seen_.at(i)) {
         marker_seen_.at(i) = true;
         // Initializing marker measurement
         slam_state_.at(3 + 2 * i) = slam_state_.at(1) + r *
-          cos(turtlelib::normalize_angle(phi + slam_state_.at(0)));
+          std::cos(turtlelib::normalize_angle(phi + slam_state_.at(0)));
         slam_state_.at(3 + 2 * i + 1) = slam_state_.at(2) + r *
-          sin(turtlelib::normalize_angle(phi + slam_state_.at(0)));
+          std::sin(turtlelib::normalize_angle(phi + slam_state_.at(0)));
       }
       // Estimated measure
       auto del_x = slam_state_.at(3 + 2 * i) - slam_state_.at(1);
       auto del_y = slam_state_.at(3 + 2 * i + 1) - slam_state_.at(2);
       auto r_h = del_x * del_x + del_y * del_y;
-      auto r_h_rt = sqrt(r_h);
-      auto phi_h = turtlelib::normalize_angle(atan2(del_y, del_x) - slam_state_.at(0));
+      auto r_h_rt = std::sqrt(r_h);
+      auto phi_h = turtlelib::normalize_angle(std::atan2(del_y, del_x) - slam_state_.at(0));
 
       // H matrix formation
       arma::mat H_i {2, size_, arma::fill::zeros};
@@ -301,8 +305,8 @@ private:
       H_i.at(1, 3 + 2 * i + 1) = del_x / r_h;
 
       // Kalmin filter gain
-      arma::mat K_i = covariance * H_i.t() *
-        (H_i * covariance * H_i.t() +
+      arma::mat K_i = covariance_ * H_i.t() *
+        (H_i * covariance_ * H_i.t() +
         R_.submat(2 * i, 2 * i, 2 * i + 1, 2 * i + 1)).i();
 
       // State Update
@@ -321,12 +325,12 @@ private:
 
       // Covariance Update
       arma::mat I = arma::eye<arma::mat>(size_, size_);
-      covariance = (I - K_i * H_i) * covariance;
+      covariance_ = (I - K_i * H_i) * covariance_;
     }
     // Publish odom tf
     Tob_ = turtlelib::Transform2D(
       turtlelib::Vector2D{
-      turtlebot_.configuration().x, turtlebot_.configuration().x},
+      turtlebot_.configuration().x, turtlebot_.configuration().y},
       turtlebot_.configuration().theta);
     Tmb_ = turtlelib::Transform2D(
       turtlelib::Vector2D{
@@ -337,19 +341,19 @@ private:
     map_odom_tf_.transform.translation.x = Tmo_.translation().x;
     map_odom_tf_.transform.translation.y = Tmo_.translation().y;
     tf2::Quaternion qu;
-    qu.setRPY(0, 0, Tmo_.rotation());
+    qu.setRPY(0, 0, turtlelib::normalize_angle(Tmo_.rotation()));
     map_odom_tf_.transform.rotation.x = qu.x();
     map_odom_tf_.transform.rotation.y = qu.y();
     map_odom_tf_.transform.rotation.z = qu.z();
     map_odom_tf_.transform.rotation.w = qu.w();
     tf_broadcaster_->sendTransform(map_odom_tf_);
 
-    // Publish estimated markers
+    // Publish estimated markers and path
     publish_markers();
+    publish_path();
 
     //Update variables for next iteration
     prev_state_ = slam_state_;
-    prev_covariance_ = covariance;
   }
 
   /// \brief Publishes the markers estimated by slam
@@ -377,6 +381,21 @@ private:
       }
     }
     estimated_pub_->publish(ma);
+  }
+
+  /// \brief Publishes the green path
+  void publish_path()
+  {
+    geometry_msgs::msg::PoseStamped pose;
+    pose.header.frame_id = "map";
+    pose.header.stamp = get_clock()->now();
+    pose.pose.position.x = slam_state_.at(1);
+    pose.pose.position.y = slam_state_.at(2);
+    pose.pose.position.z = 0.0;
+    green_path_.header.stamp = get_clock()->now();
+    green_path_.header.frame_id = "nusim/world";
+    green_path_.poses.push_back(pose);
+    path_pub_->publish(green_path_);
   }
 
   /// \brief Function for psuedo-random numbers

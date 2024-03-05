@@ -4,18 +4,10 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Global Options1
-        - /Status1
-        - /TF1
-        - /MarkerArray1
+        - /TF1/Frames1
         - /MarkerArray1/Topic1
-        - /MarkerArray2
         - /MarkerArray2/Topic1
-        - /MarkerArray3
         - /MarkerArray3/Topic1
-        - /RobotModel3
-        - /RobotModel3/Status1
-        - /MarkerArray4
         - /MarkerArray4/Topic1
       Splitter Ratio: 0.5
     Tree Height: 710
@@ -491,7 +483,7 @@ Visualization Manager:
         Inertia: false
         Mass: false
       Name: RobotModel
-      TF Prefix: ""
+      TF Prefix: green
       Update Interval: 0
       Value: true
       Visual Enabled: true
@@ -581,7 +573,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 5.03689432144165
+      Distance: 7.019199371337891
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
