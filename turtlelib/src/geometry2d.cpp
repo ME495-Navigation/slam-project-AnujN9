@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include "turtlelib/geometry2d.hpp"
 
 namespace turtlelib

@@ -14,11 +14,14 @@ project(turtlelib)
 # https://eigen.tuxfamily.org/dox/TopicCMakeGuide.html
 # find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
+find_package(Armadillo REQUIRED)
+include_directories(${ARMADILLO_INCLUDE_DIRS})
+
 # Create a library.  Can specify if it is shared or static but usually
 # you don't need or want to.
 # name is the name of the library without the extension or lib prefix
 # name creates a cmake "target"
-add_library(turtlelib src/geometry2d.cpp src/se2d.cpp src/svg.cpp src/diff_drive.cpp)
+add_library(turtlelib src/geometry2d.cpp src/se2d.cpp src/svg.cpp src/diff_drive.cpp src/circle.cpp)
 
 # Use target_include_directories so that #include"mylibrary/header.hpp" works
 # The use of the <BUILD_INTERFACE> and <INSTALL_INTERFACE> is because when
@@ -97,7 +100,7 @@ include(CTest)
 # CTest sets BUILD_TESTING to on. To disable tests add -DBUILD_TESTING=OFF when invoking cmake
 if(BUILD_TESTING)
     find_package(Catch2 3 REQUIRED)
-    add_executable(test_turtlelib tests/test_geometry2d.cpp tests/test_se2d.cpp tests/test_svg.cpp tests/test_diff_drive.cpp)
-    target_link_libraries(test_turtlelib Catch2::Catch2WithMain turtlelib) # AnyOtherLibrariesAsNeeded)
+    add_executable(test_turtlelib tests/test_geometry2d.cpp tests/test_se2d.cpp tests/test_svg.cpp tests/test_diff_drive.cpp tests/test_circle.cpp)
+    target_link_libraries(test_turtlelib Catch2::Catch2WithMain turtlelib ${ARMADILLO_LIBRARIES}) # AnyOtherLibrariesAsNeeded)
     add_test(NAME tests_for_turtlelib COMMAND test_turtlelib)
 endif()
