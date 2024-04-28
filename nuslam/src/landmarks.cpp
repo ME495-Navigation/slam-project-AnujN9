@@ -119,7 +119,9 @@ private:
       auto first_cluster = clusters.at(0);
       auto last_cluster = clusters.at(nclusters - 1);
       // check first of first and last of last
-      const auto dst = turtlelib::distance(first_cluster.at(0), last_cluster.back());
+      auto x_d = last_cluster.back().x - first_cluster.at(0).x;
+      auto y_d = last_cluster.back().y - first_cluster.at(0).y;
+      const auto dst = sqrt(x_d * x_d + y_d * y_d);
       // RCLCPP_INFO_STREAM(get_logger(), "First and last cluster distance " << dst);
       if (dst < cluster_threshold) {
         // RCLCPP_INFO_STREAM(get_logger(), "Concatenate first and last clusters");

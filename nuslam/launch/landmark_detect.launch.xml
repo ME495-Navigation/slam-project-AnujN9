@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="cmd_src" default="circle" description="Values can be: circle: launch the circle node, teleop: launch keyoard teleop, node."></arg> 
+    <arg name="robot" default="nusim" description="Values can be: nusim: To run in simulation  localhost: To run on robot  none"/>
+    <arg name="use_rviz" default="true" description="Values can be: true: To run rviz  false: To not run rviz"/>
+    
+    <group  if="$(eval '\'$(var robot)\' == \'nusim\'')">
+        <include file="$(find-pkg-share nuturtle_control)/launch/start_robot.launch.xml">
+            <arg name="cmd_src" value="$(var cmd_src)" />
+            <arg name="robot" value="$(var robot)"/>
+            <arg name="use_rviz_3" value="false"/>
+        </include>
+
+        <node name="landmarks" pkg="nuslam" exec="landmarks" >
+        </node>
+
+        <node pkg="rviz2" exec="rviz2"
+        args="-d $(find-pkg-share nuslam)/config/landmark.rviz"
+        if="$(eval '\'$(var use_rviz)\' == \'true\'')"
+        />
+    </group>
+    <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id map "/>
+</launch>
