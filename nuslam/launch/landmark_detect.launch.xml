@@ -19,5 +19,5 @@
         if="$(eval '\'$(var use_rviz)\' == \'true\'')"
         />
     </group>
-    <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id map "/>
+    <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id map"/>
 </launch>

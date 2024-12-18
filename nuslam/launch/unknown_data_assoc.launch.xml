@@ -9,13 +9,17 @@
         <include file="$(find-pkg-share nuturtle_control)/launch/start_robot.launch.xml" >
             <arg name="robot" value="$(var robot)" />
             <arg name="cmd_src" value="$(var cmd_src)" />
-            <arg name="use_rviz" value="$(var use_rviz)" />
-            <arg name="rviz_config" value="$(var rviz_config)"/>
+            <arg name="use_rviz_3" value="false"/>
         </include>
 
         <node name="slam" pkg="nuslam" exec="slam">
+            <param from="$(find-pkg-share nuturtle_description)/config/diff_params.yaml"/>
             <param name="odom_id" value="green/odom"/>
             <param name="body_id" value="green/base_footprint"/>
+            <param name="wheel_left" value="wheel_left_joint"/>
+            <param name="wheel_right" value="wheel_right_joint"/>
+            <remap from="joint_states" to="blue/joint_states"/>
+            <remap from="odom" to="green/odom"/>
         </node>
         <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py" >
             <arg name="color" value="green" />
@@ -56,6 +60,6 @@
     </group>
 
 
-    <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id map "/>
+    <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id map"/>
     
 </launch>
